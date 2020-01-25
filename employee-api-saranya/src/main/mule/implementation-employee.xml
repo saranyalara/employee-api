@@ -1,0 +1,101 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:os="http://www.mulesoft.org/schema/mule/os" xmlns:email="http://www.mulesoft.org/schema/mule/email"
+	xmlns:db="http://www.mulesoft.org/schema/mule/db"
+	xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core" xmlns:http="http://www.mulesoft.org/schema/mule/http" xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd
+http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd
+http://www.mulesoft.org/schema/mule/db http://www.mulesoft.org/schema/mule/db/current/mule-db.xsd
+http://www.mulesoft.org/schema/mule/email http://www.mulesoft.org/schema/mule/email/current/mule-email.xsd
+http://www.mulesoft.org/schema/mule/os http://www.mulesoft.org/schema/mule/os/current/mule-os.xsd">
+	<http:listener-config name="HTTP_Listener_config" doc:name="HTTP Listener config" doc:id="33ae3cfa-80c4-411f-bd3e-f451d6dd3ddb" >
+		<http:listener-connection host="0.0.0.0" port="8083" />
+	</http:listener-config>
+	<http:request-config name="HTTP_Request_configuration" doc:name="HTTP Request configuration" doc:id="53d2933d-e9f7-46ad-97cf-9d6860be3b7b" basePath="/api/v1" >
+		<http:request-connection host="dummy.restapiexample.com"/>
+	</http:request-config>
+	<db:config name="Database_Config" doc:name="Database Config" doc:id="47e99dd9-3ae5-4d0a-9e5e-b0e8c04f09a4" >
+		<db:my-sql-connection host="www.db4free.net" port="3306" user="saranyalara" password="saranya02" database="database02" />
+	</db:config>
+	<email:smtp-config name="Email_SMTP" doc:name="Email SMTP" doc:id="baa525b0-e06e-431d-9458-06179fe05148" >
+		<email:smtp-connection host="smtp.gmail.com" port="587" user="saranya.ravi@apisero.com" password="$@6Anya02" >
+			<email:properties >
+				<email:property key="#[mail.smtp.starttls.enable]" />
+			</email:properties>
+		</email:smtp-connection>
+	</email:smtp-config>
+	<flow name="get-employee-flow" doc:id="936a55d7-0b29-4300-a64f-2a750da94f8a" >
+		<logger level="INFO" doc:name="Logger" doc:id="f59443b9-4108-405f-82b5-2538a2d73392" message="get employee flow started"/>
+		<http:request method="GET" doc:name="Request" doc:id="2280f109-5e8d-40b0-8b4a-a6243ee625e8" config-ref="HTTP_Request_configuration" path="/employees"/>
+		<ee:transform doc:name="Transform Message" doc:id="e92b813f-4150-4a9a-a630-2606e61bb7d5" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+payload]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+		<flow-ref doc:name="storing-employeedata-to-database" doc:id="7f58ebc9-2eb6-49da-aed8-0325e0a392e4" name="storing-employeedata-to-database"/>
+		<logger level="INFO" doc:name="Logger" doc:id="0f21fe2e-4137-4c8b-a164-454035d967a2" message="data stored successfully"/>
+		<os:store doc:name="Store" doc:id="684fd0ee-653a-4a69-abf3-7f8a110ec9b8" key="id"/>
+	</flow>
+	<flow name="storing-employeedata-to-database" doc:id="6600814f-d531-47ab-bcc3-d4b762074384" >
+		<logger level="INFO" doc:name="Logger" doc:id="2e09a057-caa4-4ddd-a768-25b590fc8e9d" message="flow starts"/>
+		<db:insert doc:name="Insert" doc:id="d83b0451-6fe9-4d41-acb1-fb78d3793208" config-ref="Database_Config">
+			<db:sql>insert into dummyemployee values(:id,:employee_name,:employee_salary,:employee_age)</db:sql>
+			<db:input-parameters><![CDATA[#[{
+"id": payload.id,
+"employee_name": payload.employee_name,
+"employee_salary": payload.employee_salary,
+"employee_age": payload.employee_age
+}]]]></db:input-parameters>
+		</db:insert>
+		<ee:transform doc:name="Transform Message" doc:id="d70359b3-38ee-4781-8bb5-338401b58495">
+			<ee:message>
+				<ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+payload]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+	</flow>
+	<flow name="post-employee-flow" doc:id="b50443dc-642a-4849-94c7-f8347205689b" >
+		<logger level="INFO" doc:name="Logger" doc:id="ae023014-b79d-400e-98d1-f0c97e9da19e" message="flow starts"/>
+		<db:insert doc:name="Insert" doc:id="46938e6d-092f-4179-9b7c-3f4aec558fe7" config-ref="Database_Config">
+			<db:sql >insert into dummyemployee values(:id,:employee_name,:employee_salary,:employee_age)</db:sql>
+			<db:input-parameters ><![CDATA[#[{
+"id": payload.id,
+"employee_name": payload.employee_name,
+"employee_salary": payload.employee_salary,
+"employee_age": payload.employee_age
+}]]]></db:input-parameters>
+		</db:insert>
+		<ee:transform doc:name="Transform Message" doc:id="a4c9ac94-a7a2-487a-b317-298fba3937bb" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+payload]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+		<logger level="INFO" doc:name="Logger" doc:id="b6d257a3-26dd-4e4b-8d8c-722cfb3e066d" />
+		<email:send doc:name="Send" doc:id="ed135bd0-f095-4968-8d75-80950c5d2bb8" config-ref="Email_SMTP" toAddresses="saranya.ravi@apisero.com"/>
+		<logger level="INFO" doc:name="Logger" doc:id="44cf41d4-28cb-4f0e-92a6-953a9c9760eb" message="mail has been successfully send"/>
+	</flow>
+	<flow name="getById-employee-flow" doc:id="f488bfe7-0b5e-46d1-b212-baa7d595a5ed" >
+		<logger level="INFO" doc:name="Logger" doc:id="41384c82-3098-4083-add2-f18e78ad827e" />
+		<db:select doc:name="Select" doc:id="d4a5eacc-acf7-4e47-9cf6-8c6d172c5c49" config-ref="Database_Config">
+			<db:sql >select * from dummyemployee where id = :id</db:sql>
+			<db:input-parameters ><![CDATA[#["id": attributes.header.id]]]></db:input-parameters>
+		</db:select>
+		<ee:transform doc:name="Transform Message" doc:id="8d1a4ca0-9e7d-419f-b9d6-732f63784fce" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+payload]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+		<os:retrieve doc:name="Retrieve" doc:id="b506864d-010a-4e30-8aa8-b73394211268" key="id"/>
+	</flow>
+</mule>
